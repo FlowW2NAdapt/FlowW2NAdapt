@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper-to-Normal Flow Matching Adaptation - Demo</title>
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --primary-dark: #1557b0;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #202124;
+            --text-secondary: #5f6368;
+            --border: #dadce0;
+            --reference: #1e8e3e;
+            --whisper: #d93025;
+            --floww2n: #1a73e8;
+            --floww2n-v2: #7b1fa2;
+            --distillw2n: #e8710a;
+            --quickvc: #00838f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Google Sans', 'Segoe UI', Roboto, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 50%, #01579b 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto 24px;
+        }
+
+        .hero .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            padding: 6px 18px;
+            font-size: 0.85rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            text-align: center;
+            margin: 48px 0 32px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Method Cards */
+        .methods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 32px 0;
+        }
+
+        .method-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .method-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .method-card .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .method-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .method-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Audio Comparison */
+        .comparison-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .comparison-card .utterance-id {
+            font-family: 'Google Sans Mono', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .comparison-card .utterance-id .icon {
+            font-size: 1.1rem;
+        }
+
+        .audio-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .audio-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            transition: background 0.15s;
+        }
+
+        .audio-row:hover {
+            background: #f1f3f4;
+        }
+
+        .audio-row .label {
+            min-width: 200px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .audio-row .label .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .audio-row audio {
+            flex: 1;
+            height: 36px;
+            min-width: 0;
+        }
+
+        .audio-row audio::-webkit-media-controls-panel {
+            background: transparent;
+        }
+
+        .play-all-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .play-all-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            .hero .subtitle {
+                font-size: 1.05rem;
+            }
+            .audio-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .audio-row .label {
+                min-width: unset;
+            }
+            .audio-row audio {
+                width: 100%;
+            }
+            .methods-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .methods-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Nav */
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 0 20px;
+        }
+
+        nav .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        nav .nav-brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        nav .nav-links a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        nav .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        @media (max-width: 600px) {
+            nav .nav-links {
+                gap: 14px;
+            }
+            nav .nav-links a {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero -->
+    <div class="hero">
+        <h1> Whisper-to-Normal Flow Matching Adaptation: Learning from Temporally
+            Misaligned Speech Data </h1>
+        <p class="subtitle">Demo samples created with the method proposed in "Whisper-to-Normal Flow Matching Adaptation: Learning from Temporally
+            Misaligned Speech Data" paper submitted to Interspeech 2026</p>
+        <span class="badge">Whisper-to-Normal (W2N) Speech Enhancement</span>
+    </div>
+
+    <!-- Methods -->
+    <div class="container">
+        <div class="section-header" id="methods">
+            <h2>Models Compared</h2>
+            <p>Each model takes whispered speech as input and produces enhanced normal speech as output</p>
+        </div>
+
+        <div class="methods-grid">
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--whisper)"></span> Whispered Speech</h3>
+                <p>Whispered speech (model input)</p>
+            </div>
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--reference)"></span> Normal Speech</h3>
+                <p>Ground truth clean normal speech (target)</p>
+            </div>
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--floww2n)"></span>[Baseline] FlowW2N</h3>
+                <p>F. Ritter-Gutierrez et al."FlowW2N: Whispered-to-Normal Speech Conversion via Flow-Matching"</p>
+            </div>
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--distillw2n)"></span>[Baseline] DistillW2N</h3>
+                <p>T. Tan et al. "DistillW2N: A Lightweight One-Shot Whisper to Normal Voice Conversion Model Using Distillation of Self-Supervised Features"</p>
+            </div>
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--quickvc)"></span>[Baseline] QuickVC</h3>
+                <p>H. Guo et al. "QuickVC: Any-To-Many Voice Conversion Using Inverse Short-Time Fourier
+                    Transform for Faster Conversion"</p>
+            </div>
+            <div class="method-card">
+                <h3><span class="dot" style="background:var(--floww2n-v2)"></span>FlowW2N Adapt</h3>
+                <p>Proposed approach</p>
+            </div>
+        </div>
+
+        <!-- Audio Samples -->
+        <div class="section-header" id="samples">
+            <h2>Audio Samples</h2>
+            <p>Listen to side-by-side comparisons across models for the same utterance</p>
+        </div>
+
+        <div id="audio-comparisons"></div>
+
+    </div>
+
+
+    <script>
+        // ===== CONFIGURATION =====
+        const UTTERANCES = [
+            's102u009w',
+            's102u177w',
+            's106u381w',
+            's109u090w',
+            's110u087w',
+            's119u172w',
+            's120u146w',
+            's122u243w',
+            's126u050w',
+            's127u019w'
+        ];
+
+        const MODELS = [
+            { key: 'whisper', label: 'Whisper (Input)', color: 'var(--whisper)' },
+            { key: 'reference', label: 'Normal (Target)', color: 'var(--reference)' },
+            { key: 'distillw2n', label: '[Baseline] DistillW2N', color: 'var(--distillw2n)' },
+            { key: 'quickvc', label: '[Baseline] QuickVC', color: 'var(--quickvc)' },
+            { key: 'floww2n', label: '[Baseline] FlowW2N', color: 'var(--floww2n)' },
+            { key: 'floww2nadapt', label: '[Proposed] FlowW2N Adapt', color: 'var(--floww2n-v2)' }
+        ];
+
+        // ===== BUILD AUDIO COMPARISONS =====
+        const container = document.getElementById('audio-comparisons');
+
+        UTTERANCES.forEach((utt, idx) => {
+            const card = document.createElement('div');
+            card.className = 'comparison-card';
+            card.innerHTML = `
+                <div class="utterance-id">
+                    <span class="icon">🔊</span>
+                    Sample ${idx + 1} — <code>${utt}</code>
+                </div>
+                <div class="audio-grid">
+                    ${MODELS.map(m => `
+                        <div class="audio-row">
+                            <div class="label">
+                                <span class="dot" style="background:${m.color}"></span>
+                                ${m.label}
+                            </div>
+                            <audio controls preload="none">
+                                <source src="audio/${m.key}_${utt}.wav" type="audio/wav">
+                                Your browser does not support the audio element.
+                            </audio>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+    </script>
+</body>
+</html>
+</write_to_file>
